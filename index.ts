@@ -4,6 +4,8 @@ import { Namespace, Server, Socket } from "socket.io";
 import { Registry } from "./registry"
 import { CustomSocket } from "./socket";
 import { v4 as uuidv4 } from "uuid";
+import { MatchMaker } from "./matchmaker";
+import { callbackify } from "util";
 
 
 // rest of the code remains same
@@ -25,6 +27,7 @@ const io = require('socket.io')(server, options);
 const registry = new Registry(io)
 
 
+
 const authHandlers = require("./handlers/auth");
 
 
@@ -40,14 +43,76 @@ const onConnection = (socket: CustomSocket) => {
 const chat: Namespace = io.of("/chat")
 const auth: Namespace = io.of("/auth")
 
+const matchMaker = new MatchMaker()
+
+
+
+
+
+
+matchMaker.Start()
+
+
 auth.on("connection", (socket: CustomSocket) => {
-
-
-
 
 
   socket.on("connected", () => {
     console.log("socket:%s connected \n", socket.id)
+  })
+
+
+
+  // socket.on("stop-matchmaking", (callback) => {
+
+  //   if (!matchMaker.queue.Exists(socket.serverID)) {
+
+  //     callback({
+  //       status: 0,
+  //       message: "you werent in the matchmaking queue"
+  //     })
+  //   }
+
+
+
+  // })
+
+  socket.on("typing", (data) => {
+
+    let { roomID, typing } = data
+
+    socket.to(roomID).broadcast.emit("typing", {
+      username: socket.username,
+      typing,
+      timestamp: +new Date()
+    })
+
+  })
+
+
+  socket.on("chat", (data) => {
+
+    let { roomID, message } = data
+
+    auth.to(roomID).emit("chat", {
+      username: socket.username,
+      message,
+      timestamp: +new Date()
+    })
+
+  })
+
+  //start matchmaking
+  socket.on("matchmaking", (callback: any) => {
+
+    matchMaker.JoinQueue(socket)
+
+    console.log("%s Looking for a match", socket.username)
+
+    callback({
+      status: 1,
+      message: "Looking for match"
+    })
+
   })
 
 
