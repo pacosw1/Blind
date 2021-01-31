@@ -89,14 +89,36 @@ auth.on("connection", (socket: CustomSocket) => {
   })
 
 
-  socket.on("chat", (data) => {
+
+  socket.on("message-status", (data) => {
+    let { messageID, status, roomID } = data
+    socket.to(roomID).broadcast.emit("message-status", { ...data, username: socket.username })
+  })
+
+
+  socket.on("chat", (data, callback) => {
 
     let { roomID, message } = data
 
-    auth.to(roomID).emit("chat", {
+
+    const randomID = uuidv4()
+    const uuid = `${socket.username}:${roomID}:${randomID}`
+
+    const timestamp = +new Date()
+
+    callback({
+      status: 1,
+      messageID: uuid,
+      message: "message sent",
+      timestamp
+    })
+
+
+    socket.to(roomID).broadcast.emit("chat", {
       username: socket.username,
       message,
-      timestamp: +new Date()
+      timestamp,
+      messageID: uuid,
     })
 
   })

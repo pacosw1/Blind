@@ -45,8 +45,8 @@ export class MatchMaker {
         strangerOne.join(roomID)
         strangerTwo.join(roomID)
 
-        strangerOne.emit("match-found", roomID)
-        strangerTwo.emit("match-found", roomID)
+        strangerOne.emit("match-found", { roomID, username: strangerTwo.username })
+        strangerTwo.emit("match-found", { roomID, username: strangerOne.username })
 
         console.log("%s matched with %s", strangerOne.username, strangerTwo.username)
 
